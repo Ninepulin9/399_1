@@ -150,6 +150,9 @@ class Admin extends Controller
                     if (!empty($detailsText)) {
                         $info .= '<div class="small text-secondary mb-1 ps-2">+ ' . $detailsText . '</div>';
                     }
+                    if (!empty($detail->remark)) {
+                        $info .= '<div class="small text-secondary mb-1 ps-2">+ หมายเหตุ : ' . $detail->remark . '</div>';
+                    }
                     $info .= '</div>';
                     $info .= '<div class="text-end d-flex flex-column align-items-end">';
                     $info .= '<div class="mb-1">จำนวน: ' . $detail->quantity . '</div>';
@@ -418,6 +421,9 @@ class Admin extends Controller
                         $info .= '<div><span class="fw-bold">' . htmlspecialchars($optionType) . '</span></div>';
                         if (!empty($detailsText)) {
                             $info .= '<div class="small text-secondary mb-1 ps-2">+ ' . $detailsText . '</div>';
+                        }
+                        if (!empty($detail->remark)) {
+                            $info .= '<div class="small text-secondary mb-1 ps-2">+ หมายเหตุ : ' . $detail->remark . '</div>';
                         }
                         $info .= '</div>';
                         $info .= '<div class="text-end d-flex flex-column align-items-end">';

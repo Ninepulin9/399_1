@@ -160,6 +160,9 @@
                             @foreach($rs['option'] as $option)
                             <div style="font-size: 12px; color: #6b7280;">+ {{$option['option']->type}}</div>
                             @endforeach
+                            @if($rs->remark)
+                            <div style="font-size: 12px; color: #6b7280;">หมายเหตุ : {{$rs->remark}}</div>
+                            @endif
                         </td>
                         <td><?= $rs->quantity ?></td>
                         <td><?= number_format($rs->price, '2') ?> ฿</td>
