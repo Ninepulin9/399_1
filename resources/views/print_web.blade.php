@@ -13,7 +13,7 @@
         button {
           padding: 10px 16px;
           margin: 8px 0;
-          font-size: 16px;
+          font-size: 20px;
           width: 100%;
         }
 
@@ -28,7 +28,7 @@
           border: 1px solid #ccc;
           padding: 16px;
           margin: 16px 0;
-          font-size: 15px;
+          font-size: 20px;
         }
     </style>
 </head>
@@ -68,13 +68,13 @@
         html += `<div><b>ที่อยู่:</b> ${data.tax_full.address || ''}</div>`;
       }
       html += `<hr/>`;
-      html += `<table style='width:100%;font-size:15px;'>`;
+      html += `<table style='width:100%;font-size:20px;'>`;
       html += `<tr><th style='text-align:left'>เมนู</th><th>จำนวน</th><th style='text-align:right'>ราคา</th></tr>`;
       data.order.forEach(rs => {
         html += `<tr><td>${rs.menu?.name || ''}</td><td style='text-align:center'>${rs.quantity}</td><td style='text-align:right'>${Number(rs.price).toFixed(2)} ฿</td></tr>`;
         if (rs.option && Array.isArray(rs.option)) {
           rs.option.forEach(opt => {
-            html += `<tr><td colspan='3' style='font-size:13px;color:#666;padding-left:16px;'>+ ${opt.option?.type || ''}</td></tr>`;
+            html += `<tr><td colspan='3' style='font-size:20px;color:#666;padding-left:16px;'>+ ${opt.option?.type || ''}</td></tr>`;
           });
         }
       });
