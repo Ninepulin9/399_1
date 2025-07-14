@@ -89,8 +89,11 @@ class Admin extends Controller
                 }
 
                 if ($rs->status != 3) {
-                    $pay = '<button data-id="' . $rs->table_id . '" data-total="' . $rs->total . '" type="button" class="btn btn-sm btn-outline-success modalPay">ชำระเงิน</button>';
+                    $pay = '<a href="' . route('printOrderAdmin', $rs->table_id) . '" target="_blank" type="button" class="btn btn-sm btn-outline-primary m-1">ปริ้นออเดอร์</a>
+                    <a href="' . route('printOrderAdminCook', $rs->table_id) . '" target="_blank" type="button" class="btn btn-sm btn-outline-primary m-1">ปริ้นออเดอร์ในครัว</a>
+                    <button data-id="' . $rs->table_id . '" data-total="' . $rs->total . '" type="button" class="btn btn-sm btn-outline-success modalPay">ชำระเงิน</button>';
                 }
+
                 $flag_order = '<button class="btn btn-sm btn-success">สั่งหน้าร้าน</button>';
                 $action = '<button data-id="' . $rs->table_id . '" type="button" class="btn btn-sm btn-outline-primary modalShow m-1">รายละเอียด</button>' . $pay;
                 $table = Table::find($rs->table_id);
@@ -322,7 +325,7 @@ class Admin extends Controller
         if (count($pay) > 0) {
             $info = [];
             foreach ($pay as $rs) {
-                $action = '<a href="' . route('printReceipt', $rs->id) . '" target="_blank" type="button" class="btn btn-sm btn-outline-primary m-1">ออกใบเสร็จฉบับย่อ</a>
+                $action = '<button data-id="' . $rs->id . '" type="button" class="btn btn-sm btn-outline-primary preview-short m-1">พรีวิวใบเสร็จ</button>
                 <button data-id="' . $rs->id . '" type="button" class="btn btn-sm btn-outline-primary modalTax m-1">ออกใบกำกับภาษี</button>
                 <button data-id="' . $rs->id . '" type="button" class="btn btn-sm btn-outline-primary modalShowPay m-1">รายละเอียด</button>';
                 $table = Table::find($rs->table_id);
@@ -345,6 +348,7 @@ class Admin extends Controller
 
     public function printReceipt($id)
     {
+        $get = $_GET;
         $config = Config::first();
         $pay = Pay::find($id);
         $paygroup = PayGroup::where('pay_id', $id)->get();
@@ -353,15 +357,21 @@ class Admin extends Controller
             $order_id[] = $rs->order_id;
         }
         $order = OrdersDetails::whereIn('order_id', $order_id)
-            ->with('menu', 'option')
+            ->with('menu', 'option.option')
             ->get();
-        return view('tax', compact('config', 'pay', 'order'));
+        // ส่ง jsonData ไปที่ print_web สำหรับใบกำกับภาษี
+        $data = [
+            'config' => $config,
+            'pay' => $pay,
+            'order' => $order,
+            'type' => 'taxfull' // เพิ่ม type เพื่อแยกประเภท
+        ];
+        return view('tax', ['jsonData' => json_encode($data)]);
     }
 
     public function printReceiptfull($id)
     {
         $get = $_GET;
-
         $config = Config::first();
         $pay = Pay::find($id);
         $paygroup = PayGroup::where('pay_id', $id)->get();
@@ -370,9 +380,23 @@ class Admin extends Controller
             $order_id[] = $rs->order_id;
         }
         $order = OrdersDetails::whereIn('order_id', $order_id)
-            ->with('menu', 'option')
+            ->with('menu', 'option.option')
             ->get();
-        return view('taxfull', compact('config', 'pay', 'order', 'get'));
+        // ส่ง jsonData ไปที่ print_web สำหรับใบกำกับภาษี
+        $tax_full = [
+            'name' => $get['name'] ?? '',
+            'tel' => $get['tel'] ?? '',
+            'tax_id' => $get['tax_id'] ?? '',
+            'address' => $get['address'] ?? ''
+        ];
+        $data = [
+            'config' => $config,
+            'pay' => $pay,
+            'order' => $order,
+            'tax_full' => $tax_full,
+            'type' => 'taxfull' // เพิ่ม type เพื่อแยกประเภท
+        ];
+        return view('print_web', ['jsonData' => json_encode($data)]);
     }
 
     function generateRunningNumber($prefix = '', $padLength = 7)

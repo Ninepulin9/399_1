@@ -154,15 +154,130 @@
                     <input type="hidden" id="pay_id">
                 </div>
                 <div class="modal-footer">
-                    <button type="submit" class="btn btn-primary" id="open-tex-full">ออกใบเสร็จ</button>
+                    <button type="button" class="btn btn-info" id="preview-tax-full">ออกใบเสร็จ</button>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+<div class="modal fade" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true" id="modalRecipes">
+    <div class="modal-dialog modal-md">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">รายละเอียดสูตรอาหาร</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="body-html-recipes">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
+            </div>
+            </div>
+</div>
+</div>
+<div class="modal fade" tabindex="-1" aria-labelledby="previewLabel" aria-hidden="true" id="modal-preview">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">พรีวิวใบเสร็จ</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <iframe src="" id="preview-frame" style="width:100%;height:500px;border:0;"></iframe>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" id="confirm-print">ปริ้นผ่าน Application</button>
+                <button type="button" class="btn btn-warning" id="print-browser">ปริ้นแบบธรรมดา</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 @section('script')
+<script>
+    function sendPrintCommand() {
+      if (!data || !data.pay || !data.order) return;
+      const payloadArr = [
+        {
+          align: "center",
+          bold: true,
+          data: data.config?.name || '',
+          size: 2,
+          type: "text"
+        },
+        { type: "newline" },
+        {
+          align: "left",
+          bold: true,
+          data: `เลขที่ใบเสร็จ #${data.pay.payment_number || ''}`,
+          type: "text"
+        },
+        {
+          align: "left",
+          data: `วันที่: ${data.pay.created_at || ''}`,
+          type: "text"
+        }
+      ];
+      // ถ้ามี tax_full ให้แสดงข้อมูลลูกค้า
+      if (data.tax_full) {
+        payloadArr.push(
+          { align: "left", data: `ชื่อลูกค้า: ${data.tax_full.name || ''}`, type: "text" },
+          { align: "left", data: `เบอร์โทรศัพท์: ${data.tax_full.tel || ''}`, type: "text" },
+          { align: "left", data: `เลขประจำตัวผู้เสียภาษี: ${data.tax_full.tax_id || ''}`, type: "text" },
+          { align: "left", data: `ที่อยู่: ${data.tax_full.address || ''}`, type: "text" }
+        );
+      }
+      payloadArr.push(
+        { type: "newline" },
+        { type: "line" },
+        ...data.order.flatMap(rs => {
+          let arr = [
+            {
+              columns: [
+                { text: rs.menu?.name || '', width: 60 },
+                { text: String(rs.quantity), width: 10 },
+                { text: `${Number(rs.price).toFixed(2)} ฿`, width: 30 }
+              ],
+              type: "table"
+            }
+          ];
+          if (rs.option && Array.isArray(rs.option)) {
+            arr = arr.concat(rs.option.map(opt => ({
+              align: "left",
+              data: `+ ${opt.option?.type || ''}`,
+              type: "text"
+            })));
+          }
+          arr.push({ type: "line" });
+          return arr;
+        }),
+        { type: "newline" },
+        { bold: true, size: 2, type: "line" },
+        {
+          align: "right",
+          bold: true,
+          data: `Total: ${Number(data.pay.total).toFixed(2)} ฿`,
+          size: 1,
+          type: "text"
+        },
+        { type: "newline" },
+        { type: "newline" }
+      );
+      const payload = {
+        command: "PRINT_START",
+        payload: payloadArr
+      };
+      const bridge = getBridge();
+      if (bridge) {
+        if (bridge.postMessage) bridge.postMessage(JSON.stringify(payload));
+        else if (typeof bridge.sendRequest === "function") bridge.sendRequest(JSON.stringify(payload));
+      } else {
+        alert("JSBridge not available");
+      }
+    }
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://cdn.datatables.net/2.2.2/js/dataTables.js"></script>
 <script>
@@ -331,14 +446,6 @@
             }
         });
     });
-    $(document).on('click', '.modalRider', function(e) {
-        var total = $(this).data('total');
-        var id = $(this).data('id');
-        Swal.showLoading();
-        $('#order_id_rider').val(id);
-        $('#modal-rider').modal('show');
-        Swal.close();
-    });
 
     $('#confirm_pay').click(function(e) {
         e.preventDefault();
@@ -388,8 +495,10 @@
         var tel = $('#tel').val();
         var tax_id = $('#tax_id').val();
         var address = $('#address').val();
-        window.open('<?= url('admin/order/printReceiptfull') ?>/' + pay_id + '?name=' + name + '&tel=' + tel + '&tax_id=' + tax_id + '&address=' + address, '_blank');
+        var urlReceipt = '<?= url('admin/order/printReceiptfull') ?>/' + pay_id + '?name=' + name + '&tel=' + tel + '&tax_id=' + tax_id + '&address=' + address;
+        window.location.href = urlReceipt;
     });
+
     $(document).on('click', '.cancelOrderSwal', function(e) {
         var id = $(this).data('id');
         $('#modal-detail').modal('hide');
@@ -525,6 +634,59 @@
                 });
             }
         });
+    });
+    $(document).on('click', '.preview-short', function(e) {
+        var id = $(this).data('id');
+        $('#preview-frame').attr('src', '<?= url('admin/order/printReceipt') ?>/' + id + '?preview=1');
+        $('#confirm-print').data('url', '<?= url('admin/order/printReceipt') ?>/' + id);
+        $('#print_web').data('url', '<?= url('admin/order/printWeb') ?>/' + id);
+        $('#modal-preview').modal('show');
+    });
+
+    $(document).on('click', '#preview-tax-full', function(e) {
+        e.preventDefault();
+        var pay_id = $('#pay_id').val();
+        var name = $('#name').val();
+        var tel = $('#tel').val();
+        var tax_id = $('#tax_id').val();
+        var address = $('#address').val();
+        var urlPreview = '<?= url('admin/order/printReceiptfull') ?>/' + pay_id + '?name=' + name + '&tel=' + tel + '&tax_id=' + tax_id + '&address=' + address + '&preview=1';
+        $('#modal-tax-full').modal('hide');
+        $('#preview-frame').attr('src', urlPreview);
+        $('#confirm-print').data('url', '<?= url('admin/order/printReceiptfull') ?>/' + pay_id + '?name=' + name + '&tel=' + tel + '&tax_id=' + tax_id + '&address=' + address);
+        $('#print_web').data('url', '<?= url('admin/order/printWeb') ?>/' + pay_id);
+        $('#modal-preview').modal('show');
+    });
+
+    $('#confirm-print').click(function() {
+        var iframe = document.getElementById('preview-frame');
+        if (iframe && iframe.contentWindow && typeof iframe.contentWindow.sendPrintCommand === 'function') {
+            iframe.contentWindow.sendPrintCommand();
+        } else {
+            // fallback: reload iframe to url (optional)
+            var url = $(this).data('url');
+            if (url) iframe.src = url;
+        }
+    });
+
+    $('#print_web').click(function() {
+        var url = $(this).data('url');
+        $('#preview-frame').attr('src', url);
+    });
+
+    // ปุ่มปริ้นแบบธรรมดา (browser print)
+    $('#print-browser').click(function() {
+        var iframe = document.getElementById('preview-frame');
+        if (iframe && iframe.contentWindow) {
+            iframe.contentWindow.focus();
+            iframe.contentWindow.print();
+        }
+    });
+
+    $('#modal-preview').on('hidden.bs.modal', function() {
+        $('#preview-frame').attr('src', '');
+        $('#confirm-print').data('url', '');
+        $('#print_web').data('url', '');
     });
 </script>
 @endsection
