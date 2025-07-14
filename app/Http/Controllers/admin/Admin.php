@@ -89,8 +89,7 @@ class Admin extends Controller
                 }
 
                 if ($rs->status != 3) {
-                    $pay = '<a href="' . route('printOrderAdmin', $rs->table_id) . '" target="_blank" type="button" class="btn btn-sm btn-outline-primary m-1">ปริ้นออเดอร์</a>
-                    <a href="' . route('printOrderAdminCook', $rs->table_id) . '" target="_blank" type="button" class="btn btn-sm btn-outline-primary m-1">ปริ้นออเดอร์ในครัว</a>
+                    $pay = '<a href="' . route('printUnpaidReceipt', $rs->table_id) . '" target="_blank" type="button" class="btn btn-sm btn-outline-primary m-1">ปริ้นออเดอร์</a>
                     <button data-id="' . $rs->table_id . '" data-total="' . $rs->total . '" type="button" class="btn btn-sm btn-outline-success modalPay">ชำระเงิน</button>';
                 }
 
@@ -344,6 +343,32 @@ class Admin extends Controller
             ];
         }
         return response()->json($data);
+    }
+
+    public function printUnpaidReceipt($id)
+    {
+        $config = Config::first();
+        $pay = Orders::where('table_id',$id)->whereIn('status',[1,2])->get();
+        $order_id = array();
+        $total = 0;
+        foreach ($pay as $rs) {
+            $total = $total + $rs->total;
+            $order_id[] = $rs->id;
+        }
+        $order = OrdersDetails::whereIn('order_id', $order_id)
+            ->with('menu', 'option.option')
+            ->get();
+        // ส่ง jsonData ไปที่ print_web สำหรับใบกำกับภาษี
+        $data = [
+            'config' => $config,
+            'pay' => $pay,
+            'order' => $order,
+            'type' => 'taxfull', // เพิ่ม type เพื่อแยกประเภท
+            'total' => $total,
+            'id' => $id,
+            'date' => date('Y-m-d H:i:s'),
+        ];
+        return view('printUnpaid', ['jsonData' => json_encode($data)]);
     }
 
     public function printReceipt($id)

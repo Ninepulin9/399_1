@@ -120,6 +120,8 @@ Route::middleware('checkLogin')->group(function () {
     Route::post('/admin/menu/menuTypeOption/option/save', [Menu::class, 'menuOptionSave'])->name('menuOptionSave');
     Route::post('/admin/menu/menuTypeOption/option/update', [Menu::class, 'menuOptionUpdate'])->name('menuOptionUpdate');
     Route::post('/admin/menu/menuTypeOption/option/delete', [Menu::class, 'menuOptionDelete'])->name('menuOptionDelete');
+    //ปริ้นออเดอร์
+    Route::get('/admin/order/printUnpaidReceipt/{id}', [Admin::class, 'printUnpaidReceipt'])->name('printUnpaidReceipt');
 });
 
 
