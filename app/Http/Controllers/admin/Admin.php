@@ -66,7 +66,8 @@ class Admin extends Controller
                 DB::raw('SUM(o.total) as total'),
                 DB::raw('MAX(o.created_at) as created_at'),
                 DB::raw('MAX(o.status) as status'),
-                DB::raw('MAX(o.remark) as remark'),
+                DB::raw('(SELECT o2.remark FROM orders as o2 WHERE o2.table_id = o.table_id ORDER BY o2.created_at DESC LIMIT 1) as order_remark'),
+                DB::raw("(SELECT GROUP_CONCAT(od.remark SEPARATOR ', ') FROM orders_details od JOIN orders o2 ON o2.id = od.order_id WHERE o2.table_id = o.table_id AND o2.id = (SELECT o3.id FROM orders o3 WHERE o3.table_id = o.table_id ORDER BY o3.created_at DESC LIMIT 1) AND od.remark IS NOT NULL) as detail_remarks"),
                 DB::raw('SUM(CASE WHEN o.status = 1 THEN 1 ELSE 0 END) as has_status_1')
             )
             ->whereNotNull('o.table_id')
@@ -96,11 +97,13 @@ class Admin extends Controller
                 $flag_order = '<button class="btn btn-sm btn-success">สั่งหน้าร้าน</button>';
                 $action = '<button data-id="' . $rs->table_id . '" type="button" class="btn btn-sm btn-outline-primary modalShow m-1">รายละเอียด</button>' . $pay;
                 $table = Table::find($rs->table_id);
+                $remarkParts = array_filter([$rs->order_remark, $rs->detail_remarks]);
+                $remark = implode('<br>', $remarkParts);
                 $info[] = [
                     'flag_order' => $flag_order,
                     'table_id' => $table->table_number,
                     'total' => $rs->total,
-                    'remark' => $rs->remark,
+                    'remark' => $remark,
                     'status' => $status,
                     'created' => $this->DateThai($rs->created_at),
                     'action' => $action

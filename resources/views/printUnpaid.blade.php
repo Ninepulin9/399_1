@@ -85,6 +85,9 @@
                         html += `<tr><td colspan='3' style='font-size:15px;color:#666;padding-left:16px;'>+ ${opt.option?.type || ''}</td></tr>`;
                     });
                 }
+                if (rs.remark) {
+                    html += `<tr><td colspan='3' style='font-size:15px;color:#666;padding-left:16px;'>+ หมายเหตุ : ${rs.remark}</td></tr>`;
+                }
             });
             html += `</table><hr/>`;
             html += `<div style='text-align:right;font-weight:bold;'>Total: ${Number(data.total).toFixed(2)} ฿</div>`;
@@ -164,6 +167,13 @@
                             data: `+ ${opt.option?.type || ''}`,
                             type: "text"
                         })));
+                    }
+                    if (rs.remark) {
+                        arr.push({
+                            align: "left",
+                            data: `+ หมายเหตุ : ${rs.remark}`,
+                            type: "text"
+                        });
                     }
                     arr.push({ type: "line" });
                     return arr;
