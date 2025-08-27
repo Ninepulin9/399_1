@@ -35,7 +35,12 @@
         var channel = pusher.subscribe('orders');
         channel.bind('App\\Events\\OrderCreated', function(data) {
             console.log(data.order[0]);
-            document.getElementById('notifySound').play();
+            const sound = document.getElementById('notifySound');
+            if (sound) {
+                sound.play().catch(function(err) {
+                    console.warn('Notification sound failed:', err);
+                });
+            }
             Swal.fire({
                 icon: 'info',
                 title: data.order[0],
@@ -101,7 +106,7 @@
     <script src="{{asset('assets/js/main.js')}}"></script>
     <script src="{{asset('assets/js/dashboards-analytics.js')}}"></script>
     <script async defer src="https://buttons.github.io/buttons.js"></script>
+    @yield('script')
 </body>
 
 </html>
-@yield('script')
