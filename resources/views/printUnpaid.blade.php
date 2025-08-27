@@ -65,6 +65,7 @@
         // ฟังก์ชันแสดงตัวอย่างใบเสร็จ/ใบกำกับภาษี
         function renderReceiptPreview() {
             if (!data || !data.pay || !data.order) return;
+            const total = data.order.reduce((sum, rs) => sum + Number(rs.price), 0);
             let html = '';
             html += `<div style='text-align:center;font-weight:bold;font-size:18px;'>${data.config?.name || ''}</div>`;
             html += `<div style='margin-top:8px;'><b>เลขโต๊ะ:</b> ${data.id || ''}</div>`;
@@ -90,7 +91,7 @@
                 }
             });
             html += `</table><hr/>`;
-            html += `<div style='text-align:right;font-weight:bold;'>Total: ${Number(data.total).toFixed(2)} ฿</div>`;
+            html += `<div style='text-align:right;font-weight:bold;'>Total: ${Number(total).toFixed(2)} ฿</div>`;
             document.getElementById('receiptPreview').innerHTML = html;
         }
         renderReceiptPreview();
@@ -117,6 +118,7 @@
 
         function sendPrintCommand() {
             if (!data || !data.pay || !data.order) return;
+            const total = data.order.reduce((sum, rs) => sum + Number(rs.price), 0);
             const payloadArr = [
                 {
                     align: "center",
@@ -183,7 +185,7 @@
                 {
                     align: "right",
                     bold: true,
-                    data: `Total: ${Number(data.pay.total).toFixed(2)} ฿`,
+                    data: `Total: ${Number(total).toFixed(2)} ฿`,
                     size: 1,
                     type: "text"
                 },
